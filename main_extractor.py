@@ -213,6 +213,6 @@ class Extraction:
 
 # Usage example
 if __name__ == "__main__":
-    extractor = Extraction("./data_ensembl/21-1-46709983.txt")
+    extractor = Extraction("./data_ensembl/3-187668812-187670494.txt")
     extractor.process_file()
     extractor.save_to_csv()
