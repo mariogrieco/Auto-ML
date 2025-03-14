@@ -112,3 +112,169 @@ data_ie.csv: Contains the IE transition sequences.
 data_ze.csv: Contains the ZE transition sequences.
 data_ez.csv: Contains the EZ transition sequences.
 Each CSV file includes metadata (such as gene ID, chromosome number, and genomic coordinates) along with the extracted transition sequence distributed across multiple columns.
+
+# Modelos de Aprendizaje Automático
+
+Además del proceso de extracción de datos, este proyecto incluye la implementación de modelos de machine learning para la predicción de zonas de transición genómica. Se han desarrollado modelos para dos tipos de transiciones:
+
+## Tipos de Modelos Implementados
+
+1. **Modelo EI (Exón → Intrón)**
+   - Predice si una secuencia de 12 nucleótidos representa una transición válida de exón a intrón.
+   - Utiliza una arquitectura CNN (Red Neuronal Convolucional) para capturar patrones locales en la secuencia.
+   - Reconoce el patrón canónico "GT" en el sitio de empalme donador.
+
+2. **Modelo IE (Intrón → Exón)**
+   - Predice si una secuencia de 105 nucleótidos representa una transición válida de intrón a exón.
+   - Implementa una arquitectura LSTM Bidireccional para capturar dependencias a largo plazo.
+   - Identifica el patrón canónico "AG" en el sitio de empalme aceptor.
+
+## Arquitecturas Disponibles
+
+Para cada tipo de transición, se han implementado tres arquitecturas diferentes:
+
+1. **CNN (Red Neuronal Convolucional)**
+   - Efectiva para detectar motivos locales en sitios de empalme.
+   - Múltiples capas convolucionales 1D con pooling y dropout.
+
+2. **LSTM Bidireccional**
+   - Captura dependencias a largo plazo en la secuencia.
+   - Adecuada para secuencias largas como las de IE.
+
+3. **Modelo Híbrido (CNN+LSTM)**
+   - Combina las fortalezas de ambas arquitecturas.
+   - Una rama CNN para patrones locales y una rama LSTM para dependencias a largo plazo.
+
+## Uso de los Modelos
+
+### Instalación de Dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+### Entrenamiento de Modelos
+
+Para entrenar los modelos con los datos extraídos:
+
+```bash
+python train_models.py
+```
+
+Este script entrenará los modelos EI y IE y guardará los mejores modelos en archivos .h5.
+
+### Predicción
+
+Para realizar predicciones con los modelos entrenados:
+
+```bash
+python predict.py
+```
+
+También puedes procesar secuencias en formato FASTA modificando el script `predict.py`.
+
+### Personalización
+
+En los scripts `train_models.py` y `predict.py` puedes:
+
+- Cambiar las arquitecturas descomentando/comentando las líneas correspondientes.
+- Ajustar hiperparámetros como tasas de aprendizaje, tamaños de batch, etc.
+- Modificar las funciones de pérdida o métricas según tus necesidades.
+
+## Métricas de Evaluación
+
+Los modelos se evalúan utilizando:
+
+- Exactitud (Accuracy)
+- Sensibilidad (Recall para la clase positiva)
+- Especificidad (Recall para la clase negativa)
+- Área bajo la curva ROC (AUC)
+
+## Extensión a Otros Tipos de Transiciones
+
+Los modelos implementados para EI e IE pueden adaptarse fácilmente para las transiciones ZE y EZ siguiendo la misma estructura, pero ajustando los tamaños de entrada según las dimensiones de las secuencias correspondientes (550 nucleótidos).
+
+# Automatización y Flujo de Trabajo Completo
+
+Este proyecto ahora incluye un sistema completo de automatización para todo el flujo de trabajo, desde la extracción de datos hasta la evaluación de modelos, incluyendo un sistema de ensemble para combinar diferentes modelos.
+
+## Nuevos Scripts Implementados
+
+1. **ensemble_predict.py**: Implementa un sistema de ensemble que permite:
+   - Cargar y utilizar todos los modelos disponibles
+   - Realizar predicciones automáticas basadas en la longitud de la secuencia
+   - Evaluar el rendimiento de todos los modelos en datos de prueba
+   - Generar visualizaciones comparativas
+   - Procesar lotes de secuencias
+
+2. **run_automl.py**: Script principal que orquesta todo el flujo de trabajo:
+   - Extracción de datos a partir de archivos genómicos
+   - Entrenamiento de todos los modelos
+   - Evaluación y visualización de resultados
+   - Generación de informes y gráficos
+
+## Ejecución del Proyecto Completo
+
+Para ejecutar todo el flujo de trabajo:
+
+```bash
+python run_automl.py --all
+```
+
+También puedes ejecutar cada fase de forma independiente:
+
+```bash
+# Solo extracción de datos
+python run_automl.py --extract --input_file ./data_ensembl/tu_archivo.txt
+
+# Solo entrenamiento de modelos
+python run_automl.py --train
+
+# Solo evaluación de modelos
+python run_automl.py --evaluate
+```
+
+## Visualizaciones y Análisis
+
+El sistema genera automáticamente varias visualizaciones:
+
+1. **Distribuciones de Probabilidad**: Muestra cómo se distribuyen las probabilidades para ejemplos positivos y negativos en cada tipo de transición.
+
+2. **Comparación de Rendimiento**: Gráficos de barras y heatmaps que comparan las métricas de rendimiento entre los diferentes modelos.
+
+3. **Historiales de Entrenamiento**: Visualización de la evolución de la precisión y pérdida durante el entrenamiento.
+
+## Uso del Sistema de Ensemble
+
+Para utilizar el sistema de ensemble en tus propios datos:
+
+```python
+from ensemble_predict import GeneticTransitionEnsemble
+
+# Inicializar el ensemble
+ensemble = GeneticTransitionEnsemble()
+
+# Realizar predicción individual
+sequence = "aagctGTaagct"  # Secuencia EI
+result = ensemble.predict(sequence)
+print(f"Predicción: {result['results']['prediction']}")
+print(f"Probabilidad: {result['results']['probability']:.4f}")
+
+# Procesar un dataset completo
+import pandas as pd
+sequences_df = pd.DataFrame({
+    'sequence': ["aagctGTaagct", "c"*100 + "agAAA"]
+})
+results_df = ensemble.batch_predict(sequences_df, 'sequence')
+print(results_df)
+```
+
+## Extensibilidad
+
+El sistema está diseñado para ser fácilmente extensible:
+
+1. **Nuevos tipos de transiciones**: Puedes añadir nuevos extractores y modelos siguiendo el mismo patrón.
+
+2. **Nuevas arquitecturas**: Puedes implementar arquitecturas adicionales en `train_models.py`.
+
+3. **Flujos de trabajo personalizados**: Puedes modificar `run_automl.py` para adaptarlo a tus necesidades específicas.
